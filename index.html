@@ -113,7 +113,7 @@
     <header class="bg-white pt-20 pb-12 px-4 text-center">
         <div class="max-w-5xl mx-auto">
             <h1 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900 leading-tight">
-                HiSpatial: Enhancing 3D Spatial Understanding in Vision-Language Models via Hierarchical Supervision
+                HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models
             </h1>
             
             <p class="text-3xl mb-8 text-blue-700" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 900; letter-spacing: -0.01em;">
@@ -143,7 +143,7 @@
             
             <div class="flex justify-center gap-5">
                 <a href="#" class="bg-gray-800 text-white px-7 py-2.5 rounded-full font-medium shadow-md hover:bg-gray-700 hover:shadow-lg transition">Paper (PDF)</a>
-                <a href="#" class="bg-gray-100 border border-gray-300 text-gray-800 px-7 py-2.5 rounded-full font-medium shadow-sm hover:bg-gray-200 transition">Code</a>
+                <a href="https://github.com/microsoft/HiSpatial" class="bg-gray-100 border border-gray-300 text-gray-800 px-7 py-2.5 rounded-full font-medium shadow-sm hover:bg-gray-200 transition">Code</a>
                 <a href="#" class="bg-gray-100 border border-gray-300 text-gray-800 px-7 py-2.5 rounded-full font-medium shadow-sm hover:bg-gray-200 transition">Dataset</a>
             </div>
         </div>
@@ -152,11 +152,11 @@
     <main>
         <div class="bg-white pb-16">
             <section id="teaser" class="max-w-5xl mx-auto px-4 text-center">
-                <div class="bg-gray-100 rounded-xl overflow-hidden shadow-sm border border-gray-200 aspect-video flex items-center justify-center">
-                    <img src="imgs/teaser_v3.jpg" alt="teaser" class="w-full h-full object-cover"/>
+                <div class="bg-gray-100 rounded-xl overflow-hidden shadow-sm border border-gray-200 flex items-center justify-center">
+                    <img src="imgs/teaser_v3.jpg" alt="teaser" class="w-full h-auto rounded-xl"/>
                 </div>
-                <p class="mt-5 text-sm text-gray-600 text-justify leading-relaxed px-2">
-                    <strong>Figure 1.</strong> Trained on our large-scale spatial VQA data, our model develops hierarchical 3D spatial intelligence from geometric perception to abstract reasoning, and achieves state-of-the-art results on multiple spatial benchmarks.
+                <p class="mt-5 text-gray-600 text-left leading-relaxed max-w-4xl mx-auto px-4">
+                    Our HiSpatial-3B model develops hierarchical 3D spatial intelligence from geometric perception to abstract reasoning, and achieves state-of-the-art results on multiple spatial benchmarks.
                 </p>
             </section>
         </div>
@@ -166,7 +166,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Abstract</h2>
                 </div>
-                <p class="text-gray-700 leading-loose text-justify indent-8 text-lg px-2 md:px-8">
+                <p class="text-gray-700 leading-relaxed text-left text-lg max-w-4xl mx-auto px-4">
                     Achieving human-like spatial intelligence for vision-language models (VLMs) requires inferring 3D structures from 2D observations, recognizing object properties and relations in 3D space, and performing high-level spatial reasoning. In this paper, we propose a principled hierarchical framework that decomposes the learning of 3D spatial understanding in VLMs into <strong>four progressively complex levels</strong>, from geometric perception to abstract spatial reasoning. Guided by this framework, we construct an automated pipeline that processes approximately <strong>5M images with over 45M objects</strong> to generate 3D spatial VQA pairs across diverse tasks and scenes for VLM supervised fine-tuning. We also develop an <strong>RGB-D VLM incorporating metric-scale point maps</strong> as auxiliary inputs to further enhance spatial understanding. Extensive experiments demonstrate that our approach achieves state-of-the-art performance on multiple spatial understanding and reasoning benchmarks, surpassing specialized spatial models and large proprietary systems such as Gemini-2.5-pro and GPT-5. Moreover, our analysis reveals clear <strong>dependencies among hierarchical task levels</strong>, offering new insights into how multi-level task design facilitates the emergence of 3D spatial intelligence.
                 </p>
             </section>
@@ -177,8 +177,8 @@
                 <div class="text-center mb-6 max-w-5xl mx-auto">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Large-Scale Hierarchical Spatial Dataset</h2>
                 </div>
-                <p class="text-gray-700 mb-10 text-center max-w-4xl mx-auto">
-                    Our automated pipeline constructs a dataset with 5M images, 60M objects, and over 2B VQA pairs. Explore the samples from different cognitive levels below.
+                <p class="text-gray-700 mb-10 text-left text-lg leading-relaxed max-w-4xl mx-auto px-4">
+                    Our automated pipeline constructs a dataset with 5M images, 45M objects, and over 2B VQA pairs. Explore the samples from different cognitive levels below.
                 </p>
                 
                 <div class="flex flex-wrap justify-center gap-3 mb-8">
@@ -542,7 +542,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Model Structure</h2>
                 </div>
-                <p class="text-gray-700 leading-relaxed text-justify mb-8 text-lg px-2">
+                <p class="text-gray-700 mb-8 text-left text-lg leading-relaxed max-w-4xl mx-auto px-4">
                     We propose an RGB-D vision-language model that takes metric-scale monocular point maps as input, which can be derived from either depth estimators or ground-truth depth.
                 </p>
                 <div class="bg-white rounded-xl overflow-hidden shadow-md border border-gray-200 flex items-center justify-center py-10 px-6">
@@ -556,7 +556,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Model Inference Visualization</h2>
                 </div>
-                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                <p class="text-gray-700 mb-8 text-left text-lg leading-relaxed max-w-4xl mx-auto px-4">
                     Explore how our model interacts with users and answers diverse 3D spatial queries based on the visual input.
                 </p>
 
@@ -728,21 +728,21 @@
                                     <td colspan="11" class="text-left text-xs italic font-semibold text-gray-600">Our Model Variants</td>
                                 </tr>
                                 <tr class="bg-white border-b hover:bg-gray-50 transition">
-                                    <td class="text-left border-r border-gray-200 text-gray-900">Ours-3B w/o 3D</td>
+                                    <td class="text-left border-r border-gray-200 text-gray-900">HiSpatial-3B-RGB</td>
                                     <td class="border-r border-gray-200">RGB</td>
                                     <td><span class="font-bold">69.92</span></td><td><span class="font-bold">84.96</span></td><td><span class="underline">66.89</span></td><td>71.34</td><td class="border-r border-gray-200"><span class="underline">68.87</span></td>
                                     <td class="border-r border-gray-200"><span class="underline">72.43</span></td>
                                     <td><span class="underline">76.24</span></td><td><span class="underline">75.88</span></td><td><span class="underline">76.01</span></td>
                                 </tr>
                                 <tr class="bg-blue-50 border-b border-gray-200 hover:bg-blue-100 transition">
-                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">Ours-3B</td>
+                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">HiSpatial-3B</td>
                                     <td class="border-r border-gray-200 font-bold">RGB-XYZ</td>
                                     <td><span class="underline">69.17</span></td><td class="font-bold">84.96</td><td class="font-bold">79.73</td><td class="font-bold">86.89</td><td class="border-r border-gray-200 font-bold">75.47</td>
                                     <td class="border-r border-gray-200 font-bold">79.28</td>
                                     <td class="font-bold">88.12</td><td class="font-bold">84.17</td><td class="font-bold">85.16</td>
                                 </tr>
                                 <tr class="bg-white text-gray-400 hover:bg-gray-50 transition">
-                                    <td class="text-left border-r border-gray-200">Ours-3B*</td>
+                                    <td class="text-left border-r border-gray-200">HiSpatial-3B*</td>
                                     <td class="border-r border-gray-200">RGB-XYZ (GT)</td>
                                     <td>70.68</td><td><span class="underline">84.21</span></td><td>83.11</td><td>90.16</td><td class="border-r border-gray-200">79.25</td>
                                     <td class="border-r border-gray-200">81.46</td>
@@ -900,7 +900,7 @@
                                     <td colspan="7" class="text-left text-xs italic font-semibold text-gray-600">Our Model Variants</td>
                                 </tr>
                                 <tr class="bg-white border-b hover:bg-gray-50 transition">
-                                    <td class="text-left border-r border-gray-200 text-gray-900">Ours-3B w/o 3D</td>
+                                    <td class="text-left border-r border-gray-200 text-gray-900">HiSpatial-3B-RGB</td>
                                     <td class="border-r border-gray-200">RGB</td>
                                     <td class="border-r border-gray-200"><span class="underline">79.78</span></td>
                                     <td class="border-r border-gray-200">83.74</td>
@@ -909,7 +909,7 @@
                                     <td class="font-bold">64.34</td>
                                 </tr>
                                 <tr class="bg-blue-50 hover:bg-blue-100 transition">
-                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">Ours-3B</td>
+                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">HiSpatial-3B</td>
                                     <td class="border-r border-gray-200 font-bold">RGB-XYZ</td>
                                     <td class="border-r border-gray-200 font-bold">80.71</td>
                                     <td class="border-r border-gray-200 font-bold">86.18</td>
@@ -929,7 +929,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Level Dependency Ablation</h2>
                 </div>
-                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                <p class="text-gray-700 mb-8 text-left text-lg leading-relaxed max-w-4xl mx-auto px-4">
                     Inter-level task dependency analysis reveals that removing lower-level tasks during training consistently reduces higher-level performance.
                 </p>
 
@@ -950,7 +950,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Auxiliary 3D Input Ablation</h2>
                 </div>
-                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                <p class="text-gray-700 mb-8 text-left text-lg leading-relaxed max-w-4xl mx-auto px-4">
                     Effect of integrating different auxiliary 3D representations. Our proposed absolute XYZ metric space yields significant improvements over standard RGB or relative depth.
                 </p>
 
