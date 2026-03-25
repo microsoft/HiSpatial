@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+        }
+        /* 自定义滚动条样式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* 隐藏未激活的 Tab 内容 */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* QA卡片统一样式与自适应布局 */
+        .qa-card-container {
+            height: 460px; /* 强制统一高度 */
+        }
+        
+        /* 宽图：上下排布 (Landscape) */
+        .qa-card.landscape {
+            flex-direction: column;
+            width: min-content; 
+            min-width: 340px; 
+        }
+        .qa-card.landscape .img-container {
+            height: 55%;
+            width: 100%; 
+            display: flex;
+            justify-content: center; 
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .qa-card.landscape .img-container img {
+            height: 100%; 
+            width: auto;  
+            max-width: none; 
+            object-fit: contain;
+        }
+        .qa-card.landscape .qa-text {
+            height: 45%;
+            width: 100%; 
+        }
+
+        /* 高图/方图：左右排布 (Portrait) */
+        .qa-card.portrait {
+            flex-direction: row;
+            width: max-content; 
+        }
+        .qa-card.portrait .img-container {
+            height: 100%;
+            width: auto; 
+            border-right: 1px solid #e5e7eb;
+        }
+        .qa-card.portrait .img-container img {
+            height: 100%;
+            width: auto; 
+            max-width: 400px; 
+            object-fit: contain;
+        }
+        .qa-card.portrait .qa-text {
+            height: 100%;
+            width: 300px; 
+            flex-shrink: 0; 
+        }
+
+        .img-container img {
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .tab-content > .flex {
+            width: max-content; 
+            max-width: 100%;    
+            margin: 0 auto;     
+        }
+
+        .result-table th, .result-table td {
+            padding: 0.5rem 0.75rem;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <header class="bg-white pt-20 pb-12 px-4 text-center">
+        <div class="max-w-5xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900 leading-tight">
+                HiSpatial: Enhancing 3D Spatial Understanding in Vision-Language Models via Hierarchical Supervision
+            </h1>
+            
+            <p class="text-3xl mb-8 text-blue-700" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 900; letter-spacing: -0.01em;">
+                CVPR 2026
+            </p>          
+            <div class="flex flex-wrap justify-center gap-x-2 md:gap-x-2.5 gap-y-2 text-base font-medium text-gray-700 mb-6">
+                <span>Huizhi Liang<sup>1, 2, *, ‡</sup></span>
+                <span>Yichao Shen<sup>2, 3, *, ‡</sup></span>
+                <span>Yu Deng<sup>2</sup></span>
+                <span>Sicheng Xu<sup>2</sup></span>
+                <span>Zhiyuan Feng<sup>1, 2, ‡</sup></span>
+                <span>Tong Zhang<sup>4</sup></span>
+                <span>Yaobo Liang<sup>2</sup></span>
+                <span>Jiaolong Yang<sup>2</sup></span>
+            </div>            
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-base text-gray-600 mb-3">
+                <p><sup>1</sup> Tsinghua University</p>
+                <p><sup>2</sup> Microsoft Research Asia</p>
+                <p><sup>3</sup> IAIR, Xi'an Jiaotong University</p>
+                <p><sup>4</sup> University of the Chinese Academy of Sciences</p>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-base text-gray-600 mb-10">
+                <p><sup>*</sup> Equal contribution</p>
+                <p><sup>‡</sup> Work done during internship at MSRA</p>
+            </div>
+            
+            <div class="flex justify-center gap-5">
+                <a href="#" class="bg-gray-800 text-white px-7 py-2.5 rounded-full font-medium shadow-md hover:bg-gray-700 hover:shadow-lg transition">Paper (PDF)</a>
+                <a href="#" class="bg-gray-100 border border-gray-300 text-gray-800 px-7 py-2.5 rounded-full font-medium shadow-sm hover:bg-gray-200 transition">Code</a>
+                <a href="#" class="bg-gray-100 border border-gray-300 text-gray-800 px-7 py-2.5 rounded-full font-medium shadow-sm hover:bg-gray-200 transition">Dataset</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="bg-white pb-16">
+            <section id="teaser" class="max-w-5xl mx-auto px-4 text-center">
+                <div class="bg-gray-100 rounded-xl overflow-hidden shadow-sm border border-gray-200 aspect-video flex items-center justify-center">
+                    <img src="imgs/teaser_v3.jpg" alt="teaser" class="w-full h-full object-cover"/>
+                </div>
+                <p class="mt-5 text-sm text-gray-600 text-justify leading-relaxed px-2">
+                    <strong>Figure 1.</strong> Trained on our large-scale spatial VQA data, our model develops hierarchical 3D spatial intelligence from geometric perception to abstract reasoning, and achieves state-of-the-art results on multiple spatial benchmarks.
+                </p>
+            </section>
+        </div>
+
+        <div class="bg-gray-50 py-16 border-y border-gray-100">
+            <section id="abstract" class="max-w-5xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Abstract</h2>
+                </div>
+                <p class="text-gray-700 leading-loose text-justify indent-8 text-lg px-2 md:px-8">
+                    Achieving human-like spatial intelligence for vision-language models (VLMs) requires inferring 3D structures from 2D observations, recognizing object properties and relations in 3D space, and performing high-level spatial reasoning. In this paper, we propose a principled hierarchical framework that decomposes the learning of 3D spatial understanding in VLMs into <strong>four progressively complex levels</strong>, from geometric perception to abstract spatial reasoning. Guided by this framework, we construct an automated pipeline that processes approximately <strong>5M images with over 45M objects</strong> to generate 3D spatial VQA pairs across diverse tasks and scenes for VLM supervised fine-tuning. We also develop an <strong>RGB-D VLM incorporating metric-scale point maps</strong> as auxiliary inputs to further enhance spatial understanding. Extensive experiments demonstrate that our approach achieves state-of-the-art performance on multiple spatial understanding and reasoning benchmarks, surpassing specialized spatial models and large proprietary systems such as Gemini-2.5-pro and GPT-5. Moreover, our analysis reveals clear <strong>dependencies among hierarchical task levels</strong>, offering new insights into how multi-level task design facilitates the emergence of 3D spatial intelligence.
+                </p>
+            </section>
+        </div>
+
+        <div class="bg-white py-16">
+            <section id="dataset" class="max-w-[90rem] mx-auto px-4 xl:px-8">
+                <div class="text-center mb-6 max-w-5xl mx-auto">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Large-Scale Hierarchical Spatial Dataset</h2>
+                </div>
+                <p class="text-gray-700 mb-10 text-center max-w-4xl mx-auto">
+                    Our automated pipeline constructs a dataset with 5M images, 60M objects, and over 2B VQA pairs. Explore the samples from different cognitive levels below.
+                </p>
+                
+                <div class="flex flex-wrap justify-center gap-3 mb-8">
+                    <button onclick="openTab(event, 'level0')" class="tab-btn active bg-blue-600 text-white px-6 py-2.5 rounded-full font-medium text-sm shadow-md transition focus:outline-none">Level 0: Geometric Perception</button>
+                    <button onclick="openTab(event, 'level1')" class="tab-btn bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 px-6 py-2.5 rounded-full font-medium text-sm transition focus:outline-none">Level 1: Object-Level</button>
+                    <button onclick="openTab(event, 'level2')" class="tab-btn bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 px-6 py-2.5 rounded-full font-medium text-sm transition focus:outline-none">Level 2: Relational</button>
+                    <button onclick="openTab(event, 'level3')" class="tab-btn bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 px-6 py-2.5 rounded-full font-medium text-sm transition focus:outline-none">Level 3: Abstract Reasoning</button>
+                </div>
+
+                <div id="level0" class="tab-content active">
+                    <div class="flex gap-6 overflow-x-auto custom-scrollbar pb-6 pt-2 px-2 snap-x items-center justify-center lg:justify-start">
+                        
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/level0/pixel_query/img.png" alt="Pixel-Wise 3D Point Querying" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded font-medium border border-blue-200">Pixel-Wise 3D Point Querying</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: what is the xyz of the pixel in &lt;loc0325&gt;&lt;loc0951&gt;&lt;loc0325&gt;&lt;loc0951&gt;</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> 0.61m -0.20m 1.17m</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/level0/pairwise_depth/img.png" alt="Pairwise Depth Ordering" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded font-medium border border-blue-200">Pairwise Depth Ordering</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: between the pixel in &lt;loc0725&gt;&lt;loc0338&gt;&lt;loc0725&gt;&lt;loc0338&gt; and the pixel in &lt;loc0352&gt;&lt;loc0562&gt;&lt;loc0352&gt;&lt;loc0562&gt;, which one has a smaller depth value?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> the pixel in &lt;loc0725&gt;&lt;loc0338&gt;&lt;loc0725&gt;&lt;loc0338&gt; is closer</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="level1" class="tab-content">
+                    <div class="flex gap-6 overflow-x-auto custom-scrollbar pb-6 pt-2 px-2 snap-x items-center">
+                        
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/size/height/img.png" alt="Object Height Estimation" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded font-medium border border-green-200">Object Size Estimation</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: How tall would you say the faucet appears to be?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> We estimate the height of the faucet to be 0.11 meters.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/size/width/img.png" alt="Object Width Estimation" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded font-medium border border-green-200">Object Size Estimation</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: How far does the door stretch from side to side?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> We estimate the width of the door to be 0.77 meters.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/distance_o2c/img.png" alt="Distance to Camera" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded font-medium border border-green-200">Object Distance to Camera</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: How far is the woman from the camera?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> 3.85m</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/grounding_aabb/img.png" alt="Object Grounding" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded font-medium border border-green-200">Object Grounding</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: detect the aabb of the woman in white tennis attire holding a racket and standing near the net on the left side of the court</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> -2.57m -1.12m 13.22m -2.06m 0.22m 13.55m</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/orientation/img.png" alt="Object Orientation" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded font-medium border border-green-200">Object Orientation</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Which side of the sports car is facing the camera?<br/>A. back B. left C. front D. right</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> D</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="level2" class="tab-content">
+                    <div class="flex gap-6 overflow-x-auto custom-scrollbar pb-6 pt-2 px-2 snap-x items-center">
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/distance_o2o/img.png" alt="Object to Object Distance" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Distance</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: What is the distance between the golf club and the man in a light blue polo shirt?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> 0.72 meters.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l2_direction_0/img.png" alt="Object to Object Direction" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Relative Direction</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: provide the direction vector pointing from the person(highlighted by the red box) to the sign.</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> -0.46 0.18 -0.87</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l2_orient_comp/img.png" alt="Object to Object Direction" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Comparison (orientation)</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Would you say the person (highlighted by a red box) and the person (highlighted by a blue box) are oriented similarly?<br/>(A). yes<br/>(B). No</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> (A)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/existance/img.png" alt="Object Existence" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Relative Position</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Is there any trash bin can to the left of the person (highlighted by the red box)?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> No.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/position_front_back/img.png" alt="Front/Back Position" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Relative Position</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Identify the object that is farther from the camera: the glasses or the watch?<br/>I. the watch II. the glasses</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> II</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l2_position_1/img.png" alt="Relative Position" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Relative Position</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Which relative direction best describes the desktop computer from the box?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> The desktop computer can be found down of the box.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l2_comparision_most/img.png" alt="Relative Position" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Comparison(volume)</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Identify the largest person.</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> the glasses-wearing woman in striped shirt gently holding a sleeping newborn wrapped in a patterned blanket.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/position_left_right/img.png" alt="Left/Right Position" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Relative Position</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Between the chair and the cello, which one is positioned on the right side?<br/>1. the cello 2. the chair</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> 2</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/spatial_description/img.png" alt="Spatial Description" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded font-medium border border-purple-200">Comparison(depth)</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Which ice cream is the nearest to the observer?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> the pink ice cream with visible red fruit swirls located in the rightmost glass bowl on the wooden tray.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="level3" class="tab-content">
+                    <div class="flex gap-6 overflow-x-auto custom-scrollbar pb-6 pt-2 px-2 snap-x items-center">
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l3_perspective/img.png" alt="Perspective Taking" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded font-medium border border-red-200">Perspective Taking</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: From the woman's viewpoint, which side is the plaque positioned most prominently?<br/>(A). above<br/>(B). right<br/>(C). below<br/>(D). Left</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> (B)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/counting/img.png" alt="Object Counting" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded font-medium border border-red-200">Object Counting</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: How many chair are farther from the observer than the desk?</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> 4.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/perspective_taking/img.png" alt="Perspective Taking" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded font-medium border border-red-200">Perspective Taking</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: From the man in a dark blue suit's perspective, is the man in a black polo shirt located left or right of the man in a dark blue suit?<br/>(A) right (B). left</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700"><strong>A:</strong> (B)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/l3_ps/img.png" alt="Problem Solving" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded font-medium border border-red-200">Problem Solving</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Is there enough space between the chair and the sink for a person to walk through comfortably? Why? Please provide a detailed explanation with cot</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700">
+                                        <strong>A:</strong><br><br>
+                                        Step1: Plan - To answer if there's enough space for a person to walk between the chair and sink, we need the widths of both objects and their center-to-center distance. We'll calculate the minimum edge-to-edge separation using these facts.<br><br>
+                                        Step2: Facts - object_size_width: chair is 0.66m wide. object_size_width: sink is 0.16m wide. object_center_distance: chair and sink are 2.11m apart.<br><br>
+                                        Step3: Reasoning with facts - Using object_center_distance (2.11m), object_size_width (chair is 0.66m, sink is 0.16m), edge-to-edge separation is approximately: 2.11m - (0.66m/2 + 0.16m/2) = 2.11m - (0.33m + 0.08m) = about 1.7m, which exceeds typical comfortable walking width (~1 meter). Therefore, yes, there is enough space.<br><br>
+                                        Step4: Final answer - Yes, there is enough space between the chair and the sink for a person to walk through comfortably; their edges are separated by at least about 1 meter and their centers by over 2 meters.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qa-card portrait qa-card-container bg-white border border-gray-200 rounded-xl shadow-md snap-start shrink-0 overflow-hidden flex transition-all duration-300 hover:shadow-lg">
+                            <div class="img-container bg-gray-50 flex items-center justify-center p-3">
+                                <img src="qa_pairs/problem_solving/img.png" alt="Problem Solving" onload="adjustCardLayout(this)"/>
+                            </div>
+                            <div class="qa-text p-5 flex flex-col overflow-y-auto custom-scrollbar">
+                                <div class="mb-4">
+                                    <span class="inline-block bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded font-medium border border-red-200">Problem Solving</span>
+                                </div>
+                                <p class="text-sm font-semibold text-gray-900 mb-2">Q: Will an object that is 0.5 meters wide fit inside the basket without sticking out? Explain your reasoning step by step</p>
+                                <div class="mt-auto pt-3 border-t border-gray-100">
+                                    <p class="text-sm text-gray-700">
+                                        <strong>A:</strong><br>
+                                        Step1: Plan - We need to know the width of the basket.<br><br>
+                                        Step2: Facts - object_size_width: basket is 0.70m wide.<br><br>
+                                        Step3: Reasoning - A 0.5 meter wide object is less than 0.70m.<br><br>
+                                        Step4: Final answer - Yes, it will fit completely inside without sticking out.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="bg-gray-50 py-16 border-y border-gray-100">
+            <section id="model-structure" class="max-w-5xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Model Structure</h2>
+                </div>
+                <p class="text-gray-700 leading-relaxed text-justify mb-8 text-lg px-2">
+                    We propose an RGB-D vision-language model that takes metric-scale monocular point maps as input, which can be derived from either depth estimators or ground-truth depth.
+                </p>
+                <div class="bg-white rounded-xl overflow-hidden shadow-md border border-gray-200 flex items-center justify-center py-10 px-6">
+                    <img src="imgs/structure.jpg" alt="model structure" class="w-full md:w-3/4 h-auto object-contain rounded-md" />
+                </div>
+            </section>
+        </div>
+
+        <div class="bg-white py-16 border-b border-gray-100">
+            <section id="inference-visual" class="max-w-5xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Model Inference Visualization</h2>
+                </div>
+                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                    Explore how our model interacts with users and answers diverse 3D spatial queries based on the visual input.
+                </p>
+
+                <div class="flex justify-center gap-3 mb-6 overflow-x-auto custom-scrollbar pb-3 px-2" id="inference-thumbnails">
+                    </div>
+
+                <div class="max-w-5xl mx-auto relative group px-2 md:px-12">
+                    <button onclick="prevInference()" class="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2.5 shadow-md hover:bg-gray-50 focus:outline-none z-10 border border-gray-200 transition-transform active:scale-95">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+
+                    <div class="flex flex-col lg:flex-row bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200 min-h-[420px]">
+                        <div class="w-full lg:w-[45%] bg-gray-100 flex items-center justify-center p-4 border-b lg:border-b-0 lg:border-r border-gray-200 relative">
+                            <div id="img-loader" class="absolute inset-0 flex items-center justify-center bg-gray-100 z-10 transition-opacity duration-300">
+                                <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                            </div>
+                            <img id="inference-main-img" src="" alt="Inference visual" class="max-h-[380px] w-auto object-contain drop-shadow-sm rounded-lg transition-opacity duration-500 opacity-0 z-20">
+                        </div>
+                        
+                        <div class="w-full lg:w-[55%] bg-[#f8fafc] flex flex-col relative">
+                            <div class="flex-1 p-6 flex flex-col justify-center gap-6 overflow-y-auto custom-scrollbar bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4=')]">
+                                
+                                <div class="flex flex-col items-end gap-1.5 w-full opacity-0 translate-y-4 transition-all duration-500 ease-out" id="user-msg-container">
+                                    <span class="text-xs text-gray-500 font-medium mr-1">User</span>
+                                    <div class="bg-blue-600 text-white px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-md max-w-[88%] text-[15px] leading-relaxed relative">
+                                        <p id="inference-q" class="m-0"></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col items-start gap-1.5 w-full opacity-0 translate-y-4 transition-all duration-500 ease-out delay-200" id="ai-msg-container">
+                                    <span class="text-xs text-gray-500 font-medium ml-1">Spatial VLM</span>
+                                    <div class="bg-white border border-gray-200 text-gray-800 px-5 py-3.5 rounded-2xl rounded-tl-sm shadow-md max-w-[92%] text-[15px] leading-relaxed relative">
+                                        <p id="inference-a" class="m-0"></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col items-start gap-1.5 w-full opacity-0 translate-y-4 transition-all duration-500 ease-out delay-400" id="gt-msg-container">
+                                    <span class="text-xs text-green-600 font-medium ml-1">Ground Truth</span>
+                                    <div class="bg-green-50 border border-green-200 text-green-800 px-5 py-3.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[92%] text-[15px] leading-relaxed relative">
+                                        <p id="inference-gt" class="m-0"></p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="nextInference()" class="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2.5 shadow-md hover:bg-gray-50 focus:outline-none z-10 border border-gray-200 transition-transform active:scale-95">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <div class="bg-gray-50 py-16 border-b border-gray-100">
+            <section id="results" class="max-w-[90rem] mx-auto px-4 xl:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Model Performance</h2>
+                </div>
+                
+                <div class="mb-14">
+                    <div class="text-center mb-4">
+                        <h3 class="text-xl font-semibold inline-block border-b border-gray-300 pb-1 text-gray-800">Quantitative VQA Benchmarks (Level 1 & 2)</h3>
+                    </div>
+                    
+                    <div class="relative overflow-x-auto custom-scrollbar shadow-md sm:rounded-lg border border-gray-200 max-w-6xl mx-auto">
+                        <table class="w-full text-sm text-center text-gray-600 whitespace-nowrap result-table">
+                            <thead class="text-xs text-gray-700 bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th rowspan="3" class="border-r border-gray-200 text-left font-bold bg-gray-100">Model</th>
+                                    <th rowspan="3" class="border-r border-gray-200 font-bold bg-gray-100">Input</th>
+                                    <th colspan="6" class="border-b border-r border-gray-200 font-bold bg-gray-100 text-center">SpatialRGPT-Quantitative ↑</th>
+                                    <th colspan="3" class="border-b border-gray-200 font-bold bg-gray-100 text-center">QSpatial-Bench ↑</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="2" class="border-b border-r border-gray-200 font-semibold bg-gray-50">Level 1</th>
+                                    <th colspan="3" class="border-b border-r border-gray-200 font-semibold bg-gray-50">Level 2</th>
+                                    <th rowspan="2" class="border-r border-gray-200 align-bottom pb-2 font-bold bg-gray-50">Avg.</th>
+                                    <th colspan="3" class="border-b border-gray-200 font-semibold bg-gray-50">Level 1&2</th>
+                                </tr>
+                                <tr>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500">Width</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500">Height</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500 leading-tight">Direct<br>Distance</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500 leading-tight">Horizontal<br>Distance</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500 leading-tight">Vertical<br>Distance</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500">Plus</th>
+                                    <th class="border-r border-gray-200 font-normal text-gray-500">ScanNet</th>
+                                    <th class="font-bold">Avg.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="11" class="text-left text-xs italic font-semibold text-gray-600">Proprietary Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">GPT-4o</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>51.10</td><td>68.40</td><td>29.70</td><td>25.40</td><td class="border-r border-gray-200">33.00</td>
+                                    <td class="border-r border-gray-200">41.50</td>
+                                    <td>61.06</td><td>69.41</td><td>66.30</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">GPT-5</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>59.09</td><td>67.66</td><td>29.72</td><td>25.21</td><td class="border-r border-gray-200">13.72</td>
+                                    <td class="border-r border-gray-200">40.47</td>
+                                    <td>63.37</td><td>73.53</td><td>68.45</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Gemini-2.5-Pro</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>37.20</td><td>43.51</td><td>16.78</td><td>17.39</td><td class="border-r border-gray-200">15.53</td>
+                                    <td class="border-r border-gray-200">26.57</td>
+                                    <td>40.59</td><td>55.46</td><td>49.92</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="11" class="text-left text-xs italic font-semibold text-gray-600">Open-Source Vision-Language Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">PaliGemma2-3B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>20.3</td><td>27.07</td><td>20.27</td><td>15.57</td><td class="border-r border-gray-200">22.64</td>
+                                    <td class="border-r border-gray-200">21.18</td>
+                                    <td>36.63</td><td>30.06</td><td>32.84</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Qwen3VL-8B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>27.06</td><td>40.60</td><td>31.10</td><td>31.96</td><td class="border-r border-gray-200">18.86</td>
+                                    <td class="border-r border-gray-200">30.37</td>
+                                    <td>35.64</td><td>55.88</td><td>48.34</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">InternVL3.5-8B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td>27.81</td><td>41.35</td><td>31.08</td><td>31.96</td><td class="border-r border-gray-200">17.92</td>
+                                    <td class="border-r border-gray-200">30.53</td>
+                                    <td>59.41</td><td>57.06</td><td>57.94</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="11" class="text-left text-xs italic font-semibold text-gray-600">Spatial Specialist Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">RoboRefer-8B-SFT</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td>17.29</td><td>60.15</td><td>49.32</td><td>37.70</td><td class="border-r border-gray-200">28.30</td>
+                                    <td class="border-r border-gray-200">39.25</td>
+                                    <td>20.79</td><td>31.07</td><td>27.24</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">SpatialRGPT-8B</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td>48.90</td><td>61.70</td><td>45.90</td><td>68.00</td><td class="border-r border-gray-200">56.60</td>
+                                    <td class="border-r border-gray-200">56.22</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">MM-Spatial-3B</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td>55.60</td><td>83.50</td><td>59.50</td><td><span class="underline">82.00</span></td><td class="border-r border-gray-200">63.20</td>
+                                    <td class="border-r border-gray-200">68.70</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="11" class="text-left text-xs italic font-semibold text-gray-600">Our Model Variants</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Ours-3B w/o 3D</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td><span class="font-bold">69.92</span></td><td><span class="font-bold">84.96</span></td><td><span class="underline">66.89</span></td><td>71.34</td><td class="border-r border-gray-200"><span class="underline">68.87</span></td>
+                                    <td class="border-r border-gray-200"><span class="underline">72.43</span></td>
+                                    <td><span class="underline">76.24</span></td><td><span class="underline">75.88</span></td><td><span class="underline">76.01</span></td>
+                                </tr>
+                                <tr class="bg-blue-50 border-b border-gray-200 hover:bg-blue-100 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">Ours-3B</td>
+                                    <td class="border-r border-gray-200 font-bold">RGB-XYZ</td>
+                                    <td><span class="underline">69.17</span></td><td class="font-bold">84.96</td><td class="font-bold">79.73</td><td class="font-bold">86.89</td><td class="border-r border-gray-200 font-bold">75.47</td>
+                                    <td class="border-r border-gray-200 font-bold">79.28</td>
+                                    <td class="font-bold">88.12</td><td class="font-bold">84.17</td><td class="font-bold">85.16</td>
+                                </tr>
+                                <tr class="bg-white text-gray-400 hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200">Ours-3B*</td>
+                                    <td class="border-r border-gray-200">RGB-XYZ (GT)</td>
+                                    <td>70.68</td><td><span class="underline">84.21</span></td><td>83.11</td><td>90.16</td><td class="border-r border-gray-200">79.25</td>
+                                    <td class="border-r border-gray-200">81.46</td>
+                                    <td>-</td><td><span class="underline">84.12</span></td><td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-center mb-4">
+                        <h3 class="text-xl font-semibold inline-block border-b border-gray-300 pb-1 text-gray-800">Qualitative VQA Benchmarks (Level 1-3)</h3>
+                    </div>
+                    
+                    <div class="relative overflow-x-auto custom-scrollbar shadow-md sm:rounded-lg border border-gray-200 max-w-5xl mx-auto">
+                        <table class="w-full text-sm text-center text-gray-600 whitespace-nowrap result-table">
+                            <thead class="text-xs text-gray-700 bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th rowspan="2" class="border-r border-gray-200 text-left font-bold bg-gray-100">Method</th>
+                                    <th rowspan="2" class="border-r border-gray-200 font-bold bg-gray-100">Input</th>
+                                    <th class="border-r border-gray-200 text-center font-bold bg-gray-100">EmbSpatial ↑</th>
+                                    <th class="border-r border-gray-200 text-center font-bold bg-gray-100">RoboSpatial ↑</th>
+                                    <th class="border-r border-gray-200 text-center font-bold bg-gray-100">CV-Bench-3D ↑</th>
+                                    <th class="border-r border-gray-200 text-center font-bold bg-gray-100">CV-Bench-Relation ↑</th>
+                                    <th class="text-center font-bold bg-gray-100">3DSRBench ↑</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="4" class="border-r border-gray-200 text-center font-semibold bg-gray-50">Level 2</th>
+                                    <th class="text-center font-semibold bg-gray-50">Level 1-3</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="7" class="text-left text-xs italic font-semibold text-gray-600">Proprietary Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">GPT-4o</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">63.38</td>
+                                    <td class="border-r border-gray-200">77.20</td>
+                                    <td class="border-r border-gray-200">84.90</td>
+                                    <td class="border-r border-gray-200">84.62</td>
+                                    <td>44.20</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Gemini-2.5-Pro</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">76.67</td>
+                                    <td class="border-r border-gray-200">77.24</td>
+                                    <td class="border-r border-gray-200">90.80</td>
+                                    <td class="border-r border-gray-200">93.54</td>
+                                    <td>48.47</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Claude-3.7-Sonnet</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">33.33</td>
+                                    <td class="border-r border-gray-200">60.73</td>
+                                    <td class="border-r border-gray-200">85.00</td>
+                                    <td class="border-r border-gray-200">74.15</td>
+                                    <td>48.20</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="7" class="text-left text-xs italic font-semibold text-gray-600">Open-Source Vision-Language Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">PaliGemma2-3B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">28.32</td>
+                                    <td class="border-r border-gray-200">71.54</td>
+                                    <td class="border-r border-gray-200">42.17</td>
+                                    <td class="border-r border-gray-200">72.00</td>
+                                    <td>8.15</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">InternVL3.5-8B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">69.81</td>
+                                    <td class="border-r border-gray-200">78.86</td>
+                                    <td class="border-r border-gray-200">85.09</td>
+                                    <td class="border-r border-gray-200">88.00</td>
+                                    <td>51.58</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">InternVL3.5-14B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">71.62</td>
+                                    <td class="border-r border-gray-200">78.86</td>
+                                    <td class="border-r border-gray-200">86.75</td>
+                                    <td class="border-r border-gray-200">88.15</td>
+                                    <td>57.32</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Qwen-3-VL-8B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">78.50</td>
+                                    <td class="border-r border-gray-200">82.11</td>
+                                    <td class="border-r border-gray-200">90.66</td>
+                                    <td class="border-r border-gray-200">92.92</td>
+                                    <td>52.80</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Qwen-3-VL-30B-A3B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">76.40</td>
+                                    <td class="border-r border-gray-200"><span class="underline">83.73</span></td>
+                                    <td class="border-r border-gray-200">92.00</td>
+                                    <td class="border-r border-gray-200">95.38</td>
+                                    <td>55.70</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="7" class="text-left text-xs italic font-semibold text-gray-600">Spatial Specialist Models</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">SpatialBot-3B</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td class="border-r border-gray-200">50.66</td>
+                                    <td class="border-r border-gray-200">72.36</td>
+                                    <td class="border-r border-gray-200">69.08</td>
+                                    <td class="border-r border-gray-200">69.38</td>
+                                    <td>54.67</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">SpaceLLaVA-13B</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200">49.40</td>
+                                    <td class="border-r border-gray-200">61.00</td>
+                                    <td class="border-r border-gray-200">68.50</td>
+                                    <td class="border-r border-gray-200">63.69</td>
+                                    <td>46.55</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">SpatialRGPT-8B</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td class="border-r border-gray-200">59.62</td>
+                                    <td class="border-r border-gray-200">66.67</td>
+                                    <td class="border-r border-gray-200">89.15</td>
+                                    <td class="border-r border-gray-200">91.00</td>
+                                    <td>48.40</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">RoboRefer-8B-SFT</td>
+                                    <td class="border-r border-gray-200">RGB-D</td>
+                                    <td class="border-r border-gray-200">72.53</td>
+                                    <td class="border-r border-gray-200"><span class="underline">84.55</span></td>
+                                    <td class="border-r border-gray-200"><span class="underline">95.92</span></td>
+                                    <td class="border-r border-gray-200 font-bold">96.90</td>
+                                    <td>51.24</td>
+                                </tr>
+
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <td colspan="7" class="text-left text-xs italic font-semibold text-gray-600">Our Model Variants</td>
+                                </tr>
+                                <tr class="bg-white border-b hover:bg-gray-50 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900">Ours-3B w/o 3D</td>
+                                    <td class="border-r border-gray-200">RGB</td>
+                                    <td class="border-r border-gray-200"><span class="underline">79.78</span></td>
+                                    <td class="border-r border-gray-200">83.74</td>
+                                    <td class="border-r border-gray-200">95.58</td>
+                                    <td class="border-r border-gray-200">95.08</td>
+                                    <td class="font-bold">64.34</td>
+                                </tr>
+                                <tr class="bg-blue-50 hover:bg-blue-100 transition">
+                                    <td class="text-left border-r border-gray-200 text-gray-900 font-bold">Ours-3B</td>
+                                    <td class="border-r border-gray-200 font-bold">RGB-XYZ</td>
+                                    <td class="border-r border-gray-200 font-bold">80.71</td>
+                                    <td class="border-r border-gray-200 font-bold">86.18</td>
+                                    <td class="border-r border-gray-200 font-bold">97.58</td>
+                                    <td class="border-r border-gray-200"><span class="underline">95.69</span></td>
+                                    <td><span class="underline">63.81</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="bg-gray-50 py-16 border-y border-gray-100">
+            <section id="ablation" class="max-w-6xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Level Dependency Ablation</h2>
+                </div>
+                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                    Inter-level task dependency analysis reveals that removing lower-level tasks during training consistently reduces higher-level performance.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+                    <div class="lg:col-span-3 relative bg-white shadow-md sm:rounded-xl border border-gray-200 p-4 h-[400px]">
+                        <canvas id="level2Chart"></canvas>
+                    </div>
+                    <div class="lg:col-span-2 relative bg-white shadow-md sm:rounded-xl border border-gray-200 p-4 h-[400px]">
+                        <canvas id="level3Chart"></canvas>
+                    </div>
+                </div>
+                
+            </section>
+        </div>
+
+        <div class="bg-white py-16 border-b border-gray-100">
+            <section id="auxiliary-3d" class="max-w-5xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">Auxiliary 3D Input Ablation</h2>
+                </div>
+                <p class="text-gray-700 mb-8 text-center text-lg max-w-4xl mx-auto px-2">
+                    Effect of integrating different auxiliary 3D representations. Our proposed absolute XYZ metric space yields significant improvements over standard RGB or relative depth.
+                </p>
+
+                <div class="bg-white shadow-md sm:rounded-xl border border-gray-200 p-6 max-w-5xl mx-auto">
+                    
+                    <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-6 px-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-sm bg-gray-400 border border-gray-500"></span>
+                            <span class="text-sm font-medium text-gray-700">RGB Base</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-sm bg-blue-300 border border-blue-400"></span>
+                            <span class="text-sm font-medium text-gray-700">RGB + Rel Depth (MoGe2)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-sm bg-blue-600 border border-blue-700"></span>
+                            <span class="text-sm font-medium text-gray-700">RGB + XYZ (Ours, MoGe2)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 rounded-sm bg-[rgba(37,99,235,0.25)] border-2 border-blue-700"></span>
+                            <span class="text-sm font-medium text-gray-700">RGB + XYZ (Ours, GT)</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-[38%] h-[380px] relative">
+                            <canvas id="aux3dQualChart"></canvas>
+                        </div>
+                        <div class="w-full md:w-[62%] h-[380px] relative">
+                            <canvas id="aux3dQuantChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+                
+            </section>
+        </div>
+        <div class="bg-gray-50 py-16">
+            <section id="citation" class="max-w-4xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold inline-block border-b-2 border-gray-800 pb-2">BibTeX</h2>
+                </div>
+                <div class="relative bg-[#1e1e1e] rounded-xl p-6 shadow-lg border border-gray-700">
+                    <button id="copyBtn" onclick="copyBibtex()" class="absolute top-5 right-5 bg-gray-600 hover:bg-gray-500 text-white px-5 py-2 rounded-md text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-400 shadow">
+                        Copy
+                    </button>
+                    <pre class="overflow-x-auto custom-scrollbar pt-8 pb-2"><code id="bibtex-content" class="text-gray-300 text-sm md:text-base font-mono block leading-relaxed">@inproceedings{liang2026hispatial,
+  title={HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models},
+  author={Liang, Huizhi and Shen, Yichao and Deng, Yu and Xu, Sicheng and Feng, Zhiyuan and Zhang, Tong and Liang, Yaobo and Yang, Jiaolong},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2026}
+}</code></pre>
+                </div>
+            </section>
+        </div>
+        
+    </main>
+<script>
+        // Tab 切换逻辑
+        function openTab(evt, tabId) {
+            var tabContents = document.getElementsByClassName("tab-content");
+            var tabBtns = document.getElementsByClassName("tab-btn");
+            
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            for (var i = 0; i < tabBtns.length; i++) {
+                tabBtns[i].classList.remove("active", "bg-blue-600", "text-white", "shadow-md");
+                tabBtns[i].classList.add("bg-gray-100", "text-gray-700");
+            }
+            
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.remove("bg-gray-100", "text-gray-700");
+            evt.currentTarget.classList.add("active", "bg-blue-600", "text-white", "shadow-md");
+        }
+
+        // 核心功能：卡片宽高自适应计算
+        function adjustCardLayout(img) {
+            const card = img.closest('.qa-card');
+            if(!card) return;
+            const ratio = img.naturalWidth / img.naturalHeight;
+            if (ratio > 1.2) {
+                card.classList.add('landscape');
+                card.classList.remove('portrait');
+            } else {
+                card.classList.add('portrait');
+                card.classList.remove('landscape');
+            }
+        }
+
+        // --- 更新后的 Model Inference 交互逻辑 ---
+        const inferenceData = [
+            {
+                img: 'qa_pairs/model_inference/l1_distance.png',
+                q: 'What is the object to camera distance of the floral picture at the center of the image?',
+                a: '9.03m',
+                gt: '8.98m'
+            },
+            {
+                img: 'qa_pairs/model_inference/l1_orientation.png',
+                q: 'Which direction is the car facing? <br>A. Left <br>B. Right <br>C. Up<br>D. Down<br>',
+                a: 'B',
+                gt: 'B'
+            },
+            {
+                img: 'qa_pairs/model_inference/l2_distance.png',
+                q: 'What is the minimum distance between the stapler and the blue book on the table?',
+                a: 'The minimum distance between the stapler and the blue book on the table is 1.17 meters.',
+                gt: '1.20m'
+            },  
+            {
+                img: 'qa_pairs/model_inference/l2_orientation.png',
+                q: 'Are the rider facing to the similar direction with the horse?',
+                a: 'Yes',
+                gt: 'Yes'
+            },
+            {
+                img: 'qa_pairs/model_inference/l3_perspective.png',
+                q: 'If an observer is standing at the table at the left, facing toward the table (highlighted by red box), is the chair (highlighted by blue box) left or right relative to the table at the left (observer)?<br> A.left<br> B.right',
+                a: 'B',
+                gt: 'B'
+            },
+            {
+                img: 'qa_pairs/model_inference/ps1.png',
+                q: 'If two adults want to sit side-by-side on top of the ottoman facing forward, what width does each person have available assuming equal sharing? Please think step by step.',
+                a: 'Step1: Plan<br>We need to know the width of the ottoman and understand that two adults sharing it side-by-side would each take half of this width.<br><br>Step2: Facts<br>object_size_width: ottoman is 0.75m wide<br><br>Step3: Reasoning with facts<br>Using object_size_width: ottoman is 0.75m wide, if two adults share it equally, each person gets 0.75m / 2 = 0.375m, which rounds to 0.38 meters per person.<br><br>Step4: Final answer<br>Each person has 0.38 meters of width available.',
+                gt: '0.38 meters'
+            },
+            {
+                img: 'qa_pairs/model_inference/ps3.png',
+                q: 'What is the maximum height of an object that can be placed in front of the heater without blocking its airflow? Please think step by step.',
+                a: 'Step1: Plan<br>To answer this question, I need to know how tall the heater is and whether any objects currently block its airflow (occlusion). I also need to understand that placing an object in front of a heater can affect airflow if it is tall enough or obstructs the heater.<br><br>Step2: Facts (STRICT)<br>object_size_height: heater is 0.46m tall<br>objects_occlusion_relation: heater does not occlude any object<br><br>Step3: Reasoning with facts<br>Using object_size_height: The heater is 0.46m tall.<br>Using objects_occlusion_relation: The heater does not occlude any object, so any object placed directly in front of it would not block airflow.<br>Therefore, a maximum height of 0.46 meters for an object placed directly in front of the heater would ensure it does not block its airflow.<br><br>Step4: Final answer<br>The maximum height for an object placed directly in front of the heater without blocking airflow is 0.46 meters.',
+                gt: 'Maximum object height = 0.435 m'
+            }
+        ];
+        let currentInfIndex = 0;
+
+        function initInference() {
+            const thumbContainer = document.getElementById('inference-thumbnails');
+            thumbContainer.innerHTML = '';
+            
+            inferenceData.forEach((data, index) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => showInference(index);
+                btn.className = `flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-[3px] transition-all duration-300 ${index === currentInfIndex ? 'border-blue-500 shadow-md scale-110' : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300'}`;
+                
+                const img = document.createElement('img');
+                img.src = data.img;
+                img.className = 'w-full h-full object-cover bg-gray-100';
+                
+                btn.appendChild(img);
+                thumbContainer.appendChild(btn);
+            });
+            
+            showInference(currentInfIndex);
+        }
+
+        function showInference(index) {
+            currentInfIndex = index;
+            const data = inferenceData[index];
+            
+            const thumbs = document.getElementById('inference-thumbnails').children;
+            for(let i=0; i<thumbs.length; i++) {
+                thumbs[i].className = `flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-[3px] transition-all duration-300 ${i === index ? 'border-blue-500 shadow-md scale-110 opacity-100 z-10' : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300 scale-100'}`;
+            }
+            
+            const userMsg = document.getElementById('user-msg-container');
+            const aiMsg = document.getElementById('ai-msg-container');
+            const gtMsg = document.getElementById('gt-msg-container');
+            const mainImg = document.getElementById('inference-main-img');
+            const loader = document.getElementById('img-loader');
+            
+            userMsg.classList.remove('opacity-100', 'translate-y-0');
+            userMsg.classList.add('opacity-0', 'translate-y-4');
+            aiMsg.classList.remove('opacity-100', 'translate-y-0');
+            aiMsg.classList.add('opacity-0', 'translate-y-4');
+            gtMsg.classList.remove('opacity-100', 'translate-y-0');
+            gtMsg.classList.add('opacity-0', 'translate-y-4');
+            
+            mainImg.style.opacity = 0;
+            loader.style.opacity = 1;
+            
+            setTimeout(() => {
+                mainImg.src = data.img;
+                document.getElementById('inference-q').innerHTML = data.q;
+                document.getElementById('inference-a').innerHTML = data.a;
+                
+                if (data.gt) {
+                    document.getElementById('inference-gt').innerHTML = data.gt;
+                    gtMsg.style.display = 'flex';
+                } else {
+                    gtMsg.style.display = 'none';
+                }
+                
+                mainImg.onload = () => {
+                    loader.style.opacity = 0;
+                    mainImg.style.opacity = 1;
+                    
+                    userMsg.classList.remove('opacity-0', 'translate-y-4');
+                    userMsg.classList.add('opacity-100', 'translate-y-0');
+                    
+                    setTimeout(() => {
+                        aiMsg.classList.remove('opacity-0', 'translate-y-4');
+                        aiMsg.classList.add('opacity-100', 'translate-y-0');
+                    }, 400); 
+
+                    if (data.gt) {
+                        setTimeout(() => {
+                            gtMsg.classList.remove('opacity-0', 'translate-y-4');
+                            gtMsg.classList.add('opacity-100', 'translate-y-0');
+                        }, 800);
+                    }
+                };
+            }, 200);
+        }
+
+        function prevInference() {
+            let nextIdx = (currentInfIndex - 1 + inferenceData.length) % inferenceData.length;
+            showInference(nextIdx);
+        }
+
+        function nextInference() {
+            let nextIdx = (currentInfIndex + 1) % inferenceData.length;
+            showInference(nextIdx);
+        }
+
+
+        // 监听所有图片加载（处理缓存问题）与图表渲染
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            initInference();
+
+            document.querySelectorAll('.qa-card img').forEach(img => {
+                if (img.complete && img.naturalHeight !== 0) {
+                    adjustCardLayout(img);
+                }
+            });
+
+            // --- Shared Chart Options ---
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", size: 12 } }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleFont: { size: 13 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true, max: 100,
+                        title: { display: true, text: 'Accuracy (%)', font: { weight: 'bold' } },
+                        grid: { color: 'rgba(243, 244, 246, 1)' }
+                    },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            };
+
+            const datasetsStyle = [
+                { label: 'All Levels', backgroundColor: 'rgba(37, 99, 235, 0.85)', borderColor: 'rgba(37, 99, 235, 1)', borderWidth: 1, borderRadius: 4 },
+                { label: 'w/o L0, L1', backgroundColor: 'rgba(156, 163, 175, 0.85)', borderColor: 'rgba(156, 163, 175, 1)', borderWidth: 1, borderRadius: 4 },
+                { label: 'w/o L1, L2', backgroundColor: 'rgba(239, 68, 68, 0.85)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1, borderRadius: 4 }
+            ];
+
+            // Render Level 2
+            new Chart(document.getElementById('level2Chart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['CV-Bench', 'RoboSpatial', '3DSR-L2', 'EmbSpatial', 'L2 Avg.'],
+                    datasets: [
+                        { ...datasetsStyle[0], data: [96.64, 86.18, 61.32, 80.71, 81.21] },
+                        { ...datasetsStyle[1], data: [96.55, 82.93, 60.03, 79.25, 79.69] },
+                        { ...datasetsStyle[2], data: [79.00, 77.24, 37.36, 37.53, 56.21] }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: { ...chartOptions.plugins, title: { display: true, text: 'Level 2 Tasks Performance', font: { size: 15, weight: 'bold' }, padding: { bottom: 15 } } }
+                }
+            });
+
+            // Render Level 3
+            new Chart(document.getElementById('level3Chart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['3DSR-L3', 'Problem Solving', 'L3 Avg.'],
+                    datasets: [
+                        { ...datasetsStyle[0], data: [65.14, 47.44, 56.29] },
+                        { ...datasetsStyle[1], data: [51.43, 44.87, 48.15] },
+                        { ...datasetsStyle[2], data: [43.81, 39.74, 41.78] }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: { ...chartOptions.plugins, title: { display: true, text: 'Level 3 Tasks Performance', font: { size: 15, weight: 'bold' }, padding: { bottom: 15 } } }
+                }
+            });
+
+
+            // --- Render Auxiliary 3D Input Ablation Charts ---
+            const sharedAuxOptions = {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false }, // Use custom HTML legend instead
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)', titleFont: { size: 14 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) { label += context.parsed.y.toFixed(2) + '%'; }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 65, max: 85,
+                        title: { display: true, text: 'Accuracy (%)', font: { weight: 'bold' } },
+                        grid: { color: 'rgba(243, 244, 246, 1)' }
+                    },
+                    x: { grid: { display: false }, ticks: { font: { size: 14, weight: '600' } } }
+                }
+            };
+
+            // 1. Qualitative Chart (3 Bars)
+            new Chart(document.getElementById('aux3dQualChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Qualitative'],
+                    datasets: [
+                        { label: 'RGB Base', data: [83.70], backgroundColor: 'rgba(156, 163, 175, 0.85)', borderColor: 'rgba(156, 163, 175, 1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'RGB + Rel Depth (MoGe2)', data: [84.29], backgroundColor: 'rgba(147, 197, 253, 0.85)', borderColor: 'rgba(96, 165, 250, 1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'RGB + XYZ (Ours, MoGe2)', data: [84.79], backgroundColor: 'rgba(37, 99, 235, 0.9)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1, borderRadius: 4 }
+                    ]
+                },
+                options: sharedAuxOptions
+            });
+
+            // 2. Quantitative Chart (4 Bars)
+            new Chart(document.getElementById('aux3dQuantChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Quantitative'],
+                    datasets: [
+                        { label: 'RGB Base', data: [74.16], backgroundColor: 'rgba(156, 163, 175, 0.85)', borderColor: 'rgba(156, 163, 175, 1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'RGB + Rel Depth (MoGe2)', data: [75.26], backgroundColor: 'rgba(147, 197, 253, 0.85)', borderColor: 'rgba(96, 165, 250, 1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'RGB + XYZ (Ours, MoGe2)', data: [82.02], backgroundColor: 'rgba(37, 99, 235, 0.9)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'RGB + XYZ (Ours, GT)', data: [82.79], backgroundColor: 'rgba(37, 99, 235, 0.25)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 2, borderRadius: 4 }
+                    ]
+                },
+                options: sharedAuxOptions
+            });
+        });
+
+        // 复制 BibTeX 逻辑
+        function copyBibtex() {
+            const bibtexContent = document.getElementById('bibtex-content').innerText;
+            navigator.clipboard.writeText(bibtexContent).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerText = 'Copied!';
+                btn.classList.add('bg-green-600', 'hover:bg-green-500');
+                btn.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                
+                setTimeout(() => {
+                    btn.innerText = 'Copy';
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-500');
+                    btn.classList.add('bg-gray-600', 'hover:bg-gray-500');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>

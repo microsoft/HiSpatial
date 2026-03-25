@@ -1,0 +1,11 @@
+Q: Will an object that is 0.5 meters wide fit inside the basket without sticking out? Explain your reasoning step by step
+
+A:
+Step1: Plan
+We need to know the width of the basket and check if an object that is 0.5 meters wide can fit inside it without sticking out. We require a spatial fact giving us the basket's width and semantic knowledge about how sizes compare.
+Step2: Facts
+object_size_width: basket is 0.70m wide
+Step3: Reasoning with facts
+Using 'object_size_width: basket is 0.70m wide', we see that a 0.5 meter wide object is less than the width of the basket (0.70m). Therefore, it will fit entirely inside without sticking out.
+Step4: Final answer
+Yes, an object that is 0.5 meters wide will fit completely inside the basket without sticking out.
