@@ -5,14 +5,12 @@ Official implementation of our CVPR 2026 paper:
 
 🔗 **[Project Page](https://microsoft.github.io/HiSpatial/)** | 📄 **[Paper Link](arxiv_url)**
 
----
 
 ## TODO
 
 - [ ] **Release model and code** (before April 10, 2026)
 - [ ] **Release training data** (before May 1, 2026)
 
----
 
 ## Citation
 
