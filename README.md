@@ -16,8 +16,6 @@ Official implementation of our CVPR 2026 paper:
 
 ## Citation
 
-If you find our work helpful, please cite:
-
 ```bibtex
 @inproceedings{liang2026hispatial,
   title={HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models},
