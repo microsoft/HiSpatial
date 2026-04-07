@@ -16,7 +16,7 @@ Then pass the path to the eval script:
 ```bash
 python eval/eval_emb_spatial.py \
     --benchmark_path /path/to/embspatial_bench.json \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/embspatial
 ```
 
@@ -32,7 +32,7 @@ Then pass the path to the eval script:
 ```bash
 python eval/eval_3dsrbench.py \
     --tsv_path /path/to/3dsrbench_v1_vlmevalkit_circular.tsv \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/3dsrbench
 ```
 
@@ -61,6 +61,6 @@ Then pass the root directory to the eval script:
 ```bash
 python eval/eval_q_spatial.py \
     --scannet_images_dir /path/to/scannet_images \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/qspatial
 ```

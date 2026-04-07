@@ -39,6 +39,8 @@ checkpoints/
 *.log
 wandb/
 eval_results/
+eval_results_2/
+eval_results_3/
 
 # Temporary
 *.tmp

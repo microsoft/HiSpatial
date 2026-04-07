@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # ======== Paths ========
-VLM_MODEL_PATH=""
+VLM_MODEL_PATH="lhzzzzzy/HiSpatial-3B"
 SAVE_PATH=""
 TSV_PATH=""
 EMBSPATIAL_PATH=""
@@ -53,17 +53,17 @@ python "$SCRIPT_DIR/eval_q_spatial.py" \
     --scannet_images_dir "$SCANNET_IMAGES_DIR" \
     --gpu_rank "$GPU_RANK"
 
-echo "[3/6] EmbSpatial ..."
+echo "[3/6] RoboSpatial ..."
+python "$SCRIPT_DIR/eval_robospatial.py" \
+    --vlm_model_path "$VLM_MODEL_PATH" \
+    --save_path "$SAVE_PATH/robospatial" \
+    --gpu_rank "$GPU_RANK"
+
+echo "[4/6] EmbSpatial ..."
 python "$SCRIPT_DIR/eval_emb_spatial.py" \
     --vlm_model_path "$VLM_MODEL_PATH" \
     --save_path "$SAVE_PATH/emb_spatial" \
     --benchmark_path "$EMBSPATIAL_PATH" \
-    --gpu_rank "$GPU_RANK"
-
-echo "[4/6] RoboSpatial ..."
-python "$SCRIPT_DIR/eval_robospatial.py" \
-    --vlm_model_path "$VLM_MODEL_PATH" \
-    --save_path "$SAVE_PATH/robospatial" \
     --gpu_rank "$GPU_RANK"
 
 echo "[5/6] SpatialRGPT ..."

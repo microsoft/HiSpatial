@@ -3,13 +3,13 @@
 Official implementation of our CVPR 2026 paper: 
 **[HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models](https://arxiv.org/abs/2603.25411)**
 
-🔗 **[Project Page](https://microsoft.github.io/HiSpatial/)** | 📄 **[Paper Link](https://arxiv.org/pdf/2603.25411)**
+[![arXiv](https://img.shields.io/badge/arXiv-2603.25411-b31b1b?style=flat&logo=arxiv)](https://arxiv.org/abs/2603.25411) [![Project Page](https://img.shields.io/badge/Project-Homepage-blue?style=flat&logo=github)](https://microsoft.github.io/HiSpatial/) [![Model](https://img.shields.io/badge/Model-HiSpatial3B-yellow?style=flat&logo=huggingface)](https://huggingface.co/lhzzzzzy/HiSpatial-3B)
 
+## Release Progress
 
-## TODO
-
-- [ ] **Release checkpoint** (before April 10, 2026)
-- [ ] **Release training data and dataloader** (before May 1, 2026)
+- [x] **Inference code & evaluation scripts**
+- [x] **Model weights** ([HuggingFace](https://huggingface.co/lhzzzzzy/HiSpatial-3B))
+- [ ] **Training data & dataloader** (before May 1, 2026)
 
 
 ## Installation
@@ -36,7 +36,7 @@ from hispatial.inference import MoGeProcessor, HiSpatialPredictor
 
 # Initialize MoGe depth estimator and HiSpatial predictor
 moge = MoGeProcessor(device_name="cuda")
-predictor = HiSpatialPredictor(model_load_path="path/to/weights.pt")
+predictor = HiSpatialPredictor(model_load_path="lhzzzzzy/HiSpatial-3B")  # auto-downloads from HF Hub
 
 # Load an image (file path, PIL Image, or numpy array)
 image = "example.jpg"
@@ -53,6 +53,8 @@ answer = predictor.query(
 print(answer)
 ```
 
+> **Note:** You can also pass a local path to `model_load_path` (e.g. `"/path/to/weights.pt"` or a directory containing `weights.pt` + `config.json`).
+
 
 ## Evaluation
 
@@ -61,35 +63,35 @@ We evaluate HiSpatial on 6 spatial understanding benchmarks. Each eval script ca
 ```bash
 # CV-Bench (2D Relation + 3D)
 python eval/eval_cv_bench.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/cvbench
 
 # 3DSRBench
 python eval/eval_3dsrbench.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --tsv_path path/to/3DSRBenchv1.tsv \
     --save_path results/3dsrbench
 
 # EmbSpatial
 python eval/eval_emb_spatial.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/embspatial \
     --benchmark_path path/to/embspatial_bench.json
 
 # Q-Spatial (QSpatial+ and QSpatial-ScanNet)
 python eval/eval_q_spatial.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/qspatial \
     --scannet_images_dir path/to/scannet/images
 
 # RoboSpatial
 python eval/eval_robospatial.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/robospatial
 
 # SpatialRGPT
 python eval/eval_spatialrgpt.py \
-    --vlm_model_path path/to/weights.pt \
+    --vlm_model_path lhzzzzzy/HiSpatial-3B \
     --save_path results/spatialrgpt.jsonl
 ```
 

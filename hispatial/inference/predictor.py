@@ -8,51 +8,100 @@ from PIL import Image
 
 IMAGE_SIZE = 448
 
-def _resolve_backbone(backbone_path=None):
-    """Return a backbone path, preferring a local copy if available."""
-    if backbone_path is not None:
-        return backbone_path
+DEFAULT_REPO_ID = "lhzzzzzy/HiSpatial-3B"
 
-    return 'google/paligemma2-3b-pt-448'
+
+def _is_repo_id(path):
+    """Check if a string looks like a HF repo id (e.g. 'user/model')."""
+    return "/" in path and not os.path.exists(path)
 
 
 class HiSpatialPredictor:
     """Load a trained HiSpatialVLM checkpoint and run spatial VQA inference.
 
     Args:
-        model_load_path: Path to the ``weights.pt`` checkpoint file.
+        model_load_path: Path to a local ``weights.pt`` file, a local
+            directory containing ``weights.pt`` + ``config.json``, **or** a
+            Hugging Face repo id (e.g. ``"lhzzzzzy/HiSpatial-3B"``).
+            Defaults to ``"lhzzzzzy/HiSpatial-3B"`` which downloads the
+            checkpoint automatically.
         gpu_rank: CUDA device index.
-        backbone_path: Optional explicit path to the PaliGemma2 backbone.
     """
 
-    def __init__(self, model_load_path, gpu_rank=0, backbone_path=None, **kwargs):
+    def __init__(self, model_load_path=None, gpu_rank=0, **kwargs):
         self.device = torch.device(f"cuda:{gpu_rank}")
         self.img_size = IMAGE_SIZE
 
+        if model_load_path is None:
+            model_load_path = DEFAULT_REPO_ID
         if isinstance(model_load_path, list):
             model_load_path = model_load_path[0]
-        self.model_load_path = model_load_path
 
-        from transformers import PaliGemmaProcessor
+        from transformers import PaliGemmaProcessor, PaliGemmaConfig
         from hispatial.model import HiSpatialVLM
 
-        self.backbone_path = _resolve_backbone(backbone_path)
+        if _is_repo_id(model_load_path):
+            # --- Load from Hugging Face Hub ---
+            from huggingface_hub import snapshot_download
 
-        self.model = HiSpatialVLM.from_pretrained(
-            pretrained_model_name_or_path=self.backbone_path,
-            attn_implementation="eager",
-        )
+            repo_id = model_load_path
+            local_dir = snapshot_download(repo_id)
 
-        checkpoint = torch.load(self.model_load_path, map_location="cpu", weights_only=False)
-        result = self.model.load_state_dict(checkpoint, strict=False)
-        if result.missing_keys:
-            print(f"Missing keys: {result.missing_keys}")
-        if result.unexpected_keys:
-            print(f"Unexpected keys: {result.unexpected_keys}")
+            config = PaliGemmaConfig.from_pretrained(local_dir)
+            self.model = HiSpatialVLM(config).to(dtype=torch.float32)
+
+            weights_path = os.path.join(local_dir, "weights.pt")
+            checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
+            result = self.model.load_state_dict(checkpoint, strict=False)
+            if result.missing_keys:
+                print(f"Missing keys: {result.missing_keys}")
+            if result.unexpected_keys:
+                print(f"Unexpected keys: {result.unexpected_keys}")
+
+            self.processor = PaliGemmaProcessor.from_pretrained(local_dir)
+        else:
+            # --- Load from local path ---
+            if os.path.isdir(model_load_path):
+                weights_path = os.path.join(model_load_path, "weights.pt")
+                config_dir = model_load_path
+            else:
+                weights_path = model_load_path
+                config_dir = os.path.dirname(model_load_path)
+
+            config_file = os.path.join(config_dir, "config.json")
+            if os.path.exists(config_file):
+                # Local directory has config — load directly without backbone
+                config = PaliGemmaConfig.from_pretrained(config_dir)
+                self.model = HiSpatialVLM(config).to(dtype=torch.float32)
+
+                checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
+                result = self.model.load_state_dict(checkpoint, strict=False)
+                if result.missing_keys:
+                    print(f"Missing keys: {result.missing_keys}")
+                if result.unexpected_keys:
+                    print(f"Unexpected keys: {result.unexpected_keys}")
+
+                self.processor = PaliGemmaProcessor.from_pretrained(config_dir)
+            else:
+                # Legacy: bare weights.pt without config, need backbone
+                backbone = kwargs.get("backbone_path", "google/paligemma2-3b-pt-448")
+
+                self.model = HiSpatialVLM.from_pretrained(
+                    pretrained_model_name_or_path=backbone,
+                    attn_implementation="eager",
+                )
+
+                checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
+                result = self.model.load_state_dict(checkpoint, strict=False)
+                if result.missing_keys:
+                    print(f"Missing keys: {result.missing_keys}")
+                if result.unexpected_keys:
+                    print(f"Unexpected keys: {result.unexpected_keys}")
+
+                self.processor = PaliGemmaProcessor.from_pretrained(backbone)
 
         self.model.eval()
         self.model.to(self.device)
-        self.processor = PaliGemmaProcessor.from_pretrained(self.backbone_path)
 
     def query(self, image, prompt, xyz_dict=None, xyz_values=None):
         """Run a spatial VQA query on an image.
