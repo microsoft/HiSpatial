@@ -43,7 +43,7 @@ pip install -e ".[train]"
 
 ### Data Preparation
 
-Download the training data from [HuggingFace](https://huggingface.co/datasets/lhzzzzzy/HiSpatial-Data) and organize as follows:
+Download the training data from [HuggingFace](https://huggingface.co/datasets/lhzzzzzy/HiSpatial-Data)
 
 Update the paths in your config file (e.g., `configs/train_default.json`).
 
