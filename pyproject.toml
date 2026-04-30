@@ -13,7 +13,7 @@ authors = [
     {name = "Microsoft Research"},
 ]
 dependencies = [
-    "torch==2.6.0",
+    "torch==2.8.0",
     "torchvision==0.21.0",
     "transformers==4.50.0",
     "pillow",
