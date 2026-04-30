@@ -271,7 +271,7 @@ def experiment(variant):
     coyo_tar_list = [str(p) for p in coyo_dir.glob("*/*.tar")]
     o365_tar_list = [str(p) for p in o365_dir.glob("*/*.tar")]
     general_tar_list = [str(p) for p in general_data_dir.glob("*/*.tar")]
-    ca1m_tar_list = [str(p) for p in ca1m_data_dir.glob("*/*.tar")]
+    ca1m_tar_list = [str(p) for p in ca1m_data_dir.glob("*.tar")]
 
     print(f"Found {len(coyo_tar_list)} shards in {coyo_dir}")
     print(f"Found {len(o365_tar_list)} shards in {o365_dir}")

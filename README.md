@@ -3,13 +3,22 @@
 Official implementation of our CVPR 2026 paper: 
 **[HiSpatial: Taming Hierarchical 3D Spatial Understanding in Vision-Language Models](https://arxiv.org/abs/2603.25411)**
 
-[![arXiv](https://img.shields.io/badge/arXiv-2603.25411-b31b1b?style=flat&logo=arxiv)](https://arxiv.org/abs/2603.25411) [![Project Page](https://img.shields.io/badge/Project-Homepage-blue?style=flat&logo=github)](https://microsoft.github.io/HiSpatial/) [![Model](https://img.shields.io/badge/Model-HiSpatial3B-yellow?style=flat&logo=huggingface)](https://huggingface.co/lhzzzzzy/HiSpatial-3B)
+[![arXiv](https://img.shields.io/badge/arXiv-2603.25411-b31b1b?style=flat&logo=arxiv)](https://arxiv.org/abs/2603.25411) [![Project Page](https://img.shields.io/badge/Project-Homepage-blue?style=flat&logo=github)](https://microsoft.github.io/HiSpatial/) [![Model](https://img.shields.io/badge/Model-HiSpatial3B-yellow?style=flat&logo=huggingface)](https://huggingface.co/lhzzzzzy/HiSpatial-3B) [![Dataset](https://img.shields.io/badge/Dataset-HiSpatial--Data-green?style=flat&logo=huggingface)](https://huggingface.co/datasets/lhzzzzzy/HiSpatial-Data)
 
-## Release Progress
+---
 
-- [x] **Inference code & evaluation scripts**
-- [x] **Model weights** ([HuggingFace](https://huggingface.co/lhzzzzzy/HiSpatial-3B))
-- [ ] **Training data & dataloader** (before May 1, 2026)
+## HiSpatial Training Data (Open-Sourced)
+
+We open-source a large subset of the training data used in HiSpatial, consisting of **1.2M images** with rich spatial annotations:
+
+| Split | Images | Source | Description |
+|-------|--------|--------|-------------|
+| **In-the-Wild-o365** | ~1M | Objects365 | Internet images with MoGe2-estimated metric monocular point clouds and multi-level spatial QA annotations (orientation, spatial relation, distance, depth comparison, object size, perspective taking, etc.) |
+| **3D-Labeled** | ~200K | CA-1M | 3D scene images with ground-truth camera intrinsics, metric monocular point clouds, and QA annotations:(orientation, perspective_taking, spatial_relation, distance, problem_solving etc.) |
+
+The data is available on [HuggingFace Datasets](https://huggingface.co/datasets/lhzzzzzy/HiSpatial-Data).
+
+---
 
 
 ## Installation
@@ -24,7 +33,50 @@ pip install -e ".[eval]"
 
 # Install MoGe depth estimator (required for inference)
 pip install -e ".[depth]"
+
+# Install training dependencies
+pip install -e ".[train]"
 ```
+
+
+## Training
+
+### Data Preparation
+
+Download the training data from [HuggingFace](https://huggingface.co/datasets/lhzzzzzy/HiSpatial-Data) and organize as follows:
+
+Update the paths in your config file (e.g., `configs/train_default.json`).
+
+### Single-Node Training
+
+```bash
+export WANDB_API_KEY="your_wandb_key"
+
+# 8-GPU single node
+torchrun --nproc_per_node=8 scripts/train.py configs/train_default.json
+```
+
+### Multi-Node Training (Slurm)
+
+```bash
+# Submit a 4-node (32 GPU) training job
+sbatch scripts/run_train.sh configs/train_default.json
+
+# Or with a custom config
+sbatch scripts/run_train.sh configs/your_config.json
+```
+
+### Configuration
+
+Training configs are JSON files with inheritance support (via the `parent` field). See `configs/train_default.json` for all available options. Key parameters:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `batch_size` | 8 | Per-device batch size |
+| `total_batch_size` | 256 | Global batch size (across all GPUs) |
+| `learning_rate` | 2e-5 | Peak learning rate |
+| `trainer.max_steps` | 100000 | Total training steps |
+| `mix_weights` | see config | Sampling weights for each data stream |
 
 
 ## Inference
@@ -101,6 +153,12 @@ Or run all benchmarks at once (edit paths in the script first):
 bash eval/run_all.sh
 ```
 
+## Release Progress
+
+- [x] **Inference code & evaluation scripts**
+- [x] **Model weights** ([HuggingFace](https://huggingface.co/lhzzzzzy/HiSpatial-3B))
+- [x] **Training data & dataloader**
+- [x] **Training code**
 
 ## Citation
 

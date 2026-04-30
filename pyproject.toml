@@ -14,8 +14,8 @@ authors = [
 ]
 dependencies = [
     "torch==2.6.0",
-    "torchvision",
-    "transformers>=4.50.0,<5.0",
+    "torchvision==0.21.0",
+    "transformers==4.50.0",
     "pillow",
     "numpy<2",
     "opencv-python-headless",
@@ -26,6 +26,7 @@ dependencies = [
     "einops",
     "timm",
     "protobuf",
+    "utils3d @ git+https://github.com/EasternJournalist/utils3d@c5daf6f6c244d251f252102d09e9b7bcef791a38",
 ]
 
 [project.optional-dependencies]

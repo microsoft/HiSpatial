@@ -32,7 +32,6 @@ Thumbs.db
 *.ckpt
 *.bin
 *.safetensors
-data/
 checkpoints/
 
 # Logs
