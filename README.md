@@ -47,7 +47,7 @@ Download the training data from [HuggingFace](https://huggingface.co/datasets/lh
 
 Update the paths in your config file (e.g., `configs/train_default.json`).
 
-### Single-Node Training
+### Training
 
 ```bash
 export WANDB_API_KEY="your_wandb_key"
@@ -55,28 +55,6 @@ export WANDB_API_KEY="your_wandb_key"
 # 8-GPU single node
 torchrun --nproc_per_node=8 scripts/train.py configs/train_default.json
 ```
-
-### Multi-Node Training (Slurm)
-
-```bash
-# Submit a 4-node (32 GPU) training job
-sbatch scripts/run_train.sh configs/train_default.json
-
-# Or with a custom config
-sbatch scripts/run_train.sh configs/your_config.json
-```
-
-### Configuration
-
-Training configs are JSON files with inheritance support (via the `parent` field). See `configs/train_default.json` for all available options. Key parameters:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `batch_size` | 8 | Per-device batch size |
-| `total_batch_size` | 256 | Global batch size (across all GPUs) |
-| `learning_rate` | 2e-5 | Peak learning rate |
-| `trainer.max_steps` | 100000 | Total training steps |
-| `mix_weights` | see config | Sampling weights for each data stream |
 
 
 ## Inference
